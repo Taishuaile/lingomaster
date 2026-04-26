@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LingoMaster | 英文單字大師</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background Animated Shapes -->
+  <div class="bg-shape shape-1"></div>
+  <div class="bg-shape shape-2"></div>
+  <div class="bg-shape shape-3"></div>
+
+  <div class="app-container">
+    
+    <!-- Screen 1: Start -->
+    <div id="screen-start" class="screen active">
+      <div class="logo-box">
+        <div class="logo-emoji">📚</div>
+        <h1 class="app-title">LingoMaster</h1>
+        <p class="app-subtitle">你的每日單字訓練所</p>
+        <div class="total-words-badge">
+          總收錄：<span id="total-word-count">0</span> 字 
+          <div class="diff-breakdown">
+            (簡易: <span id="count-easy">0</span> | 中等: <span id="count-medium">0</span> | 困難: <span id="count-hard">0</span> | Pro: <span id="count-pro">0</span>)
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-box">
+        <p class="settings-label">選擇難度</p>
+        <div class="difficulty-options">
+          <button class="btn-diff active" data-diff="easy">簡易</button>
+          <button class="btn-diff" data-diff="medium">中等</button>
+          <button class="btn-diff" data-diff="hard">困難</button>
+          <button class="btn-diff" data-diff="pro">Pro</button>
+        </div>
+      </div>
+
+      <div class="settings-box">
+        <p class="settings-label">這次想學幾個單字？</p>
+        <div class="word-count-options">
+          <button class="btn-count active" data-count="5">5</button>
+          <button class="btn-count" data-count="10">10</button>
+          <button class="btn-count" data-count="15">15</button>
+        </div>
+      </div>
+
+      <div class="start-actions" style="display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 20px;">
+        <button id="btn-start-learning" class="btn-primary" style="width: 100%;">開始學習 🚀</button>
+        <button id="btn-start-wordle" class="btn-primary" style="width: 100%; background: linear-gradient(135deg, #8b5cf6, #ec4899); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);">單字拼圖 (Wordle) 🎮</button>
+      </div>
+    </div>
+
+    <!-- Screen 2: Learning Flashcards -->
+    <div id="screen-learn" class="screen">
+      <header class="top-bar">
+        <div class="progress-text">學習中 <span id="learn-current-index">1</span> / <span id="learn-total">5</span></div>
+        <div class="progress-bar-container">
+          <div id="learn-progress-fill" class="progress-fill"></div>
+        </div>
+      </header>
+
+      <div class="flashcard-container">
+        <div class="flashcard">
+          <div class="fc-word-group">
+            <h2 id="fc-word" class="fc-word">Word</h2>
+            <button id="btn-speak-word" class="btn-icon" title="發音單字">🔊</button>
+          </div>
+          <span id="fc-pos" class="fc-pos">pos.</span>
+          <p id="fc-verb-forms" class="fc-verb-forms hidden">三態：</p>
+          <div id="fc-trans" class="fc-trans">中文翻譯</div>
+          
+          <div class="fc-divider"></div>
+          
+          <div class="fc-example-group">
+            <div class="fc-example-header">
+              <p id="fc-example" class="fc-example">Example sentence goes here.</p>
+              <button id="btn-speak-example" class="btn-icon" title="發音例句">🔊</button>
+            </div>
+            <p id="fc-example-trans" class="fc-example-trans">例句的中文翻譯</p>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-next-word" class="btn-primary">下一個單字 ➔</button>
+    </div>
+
+    <!-- Screen 3: Transition to Quiz -->
+    <div id="screen-ready-quiz" class="screen">
+      <div class="ready-box">
+        <div class="ready-emoji">🧠</div>
+        <h2 class="ready-title">學習完成！</h2>
+        <p class="ready-desc">準備好驗收剛剛學過的單字了嗎？</p>
+        <button id="btn-start-quiz" class="btn-primary">進入測驗 📝</button>
+      </div>
+    </div>
+
+    <!-- Screen 4: Quiz -->
+    <div id="screen-quiz" class="screen">
+      <header class="top-bar">
+        <div class="progress-text">測驗中 <span id="quiz-current-index">1</span> / <span id="quiz-total">5</span></div>
+        <div class="progress-bar-container">
+          <div id="quiz-progress-fill" class="progress-fill quiz-theme"></div>
+        </div>
+      </header>
+
+      <div class="quiz-container">
+        <div class="quiz-card">
+          <h3 class="quiz-instruction">請選擇正確的單字填入空格：</h3>
+          <div class="quiz-q-group">
+            <p id="quiz-question" class="quiz-question">He had to ______ his car in the snow.</p>
+            <button id="btn-speak-quiz" class="btn-icon" title="發音題目">🔊</button>
+          </div>
+          
+          <div class="quiz-helpers">
+            <button id="btn-show-hint" class="btn-text">💡 顯示提示</button>
+            <button id="btn-show-trans" class="btn-text">🇹🇼 顯示翻譯</button>
+          </div>
+          
+          <p id="quiz-hint" class="quiz-hint hidden">提示：放棄、拋棄 (v.)</p>
+          <p id="quiz-trans" class="quiz-trans hidden">他不得不在雪地裡棄車。</p>
+          
+          <div id="quiz-options" class="quiz-options">
+            <!-- Options injected by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div id="quiz-feedback" class="quiz-feedback">
+        <!-- Feedback message -->
+      </div>
+      <button id="btn-next-question" class="btn-primary hidden">下一題 ➔</button>
+    </div>
+
+    <!-- Screen 5: Final Result -->
+    <div id="screen-result" class="screen">
+      <div class="result-box">
+        <div id="result-emoji" class="result-emoji">🏆</div>
+        <h2 class="result-title">測驗結束</h2>
+        <div class="score-circle">
+          <div class="score-text">
+            <span id="score-correct">4</span><span class="score-slash">/</span><span id="score-total">5</span>
+          </div>
+        </div>
+        <p id="result-msg" class="result-msg">太棒了！你的記憶力真好！</p>
+        
+        <div class="result-actions">
+          <button id="btn-restart" class="btn-primary">再次學習 🔄</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wordle Screen -->
+    <div id="screen-wordle" class="screen">
+      <div class="header-actions">
+        <button id="btn-wordle-back" class="btn-icon" style="position:absolute; top: 15px; left: 15px; z-index: 10;">⬅️</button>
+      </div>
+      <h2 class="section-title">Lingo Wordle</h2>
+      <p class="quiz-instruction">猜出隱藏的單字！(最多 10 次)</p>
+      
+      <div class="wordle-board" id="wordle-board"></div>
+      <div id="wordle-message" class="quiz-feedback" style="margin-top: 10px;"></div>
+      
+      <div class="keyboard" id="wordle-keyboard">
+        <div class="keyboard-row">
+          <button class="key" data-key="q">Q</button>
+          <button class="key" data-key="w">W</button>
+          <button class="key" data-key="e">E</button>
+          <button class="key" data-key="r">R</button>
+          <button class="key" data-key="t">T</button>
+          <button class="key" data-key="y">Y</button>
+          <button class="key" data-key="u">U</button>
+          <button class="key" data-key="i">I</button>
+          <button class="key" data-key="o">O</button>
+          <button class="key" data-key="p">P</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key" data-key="a">A</button>
+          <button class="key" data-key="s">S</button>
+          <button class="key" data-key="d">D</button>
+          <button class="key" data-key="f">F</button>
+          <button class="key" data-key="g">G</button>
+          <button class="key" data-key="h">H</button>
+          <button class="key" data-key="j">J</button>
+          <button class="key" data-key="k">K</button>
+          <button class="key" data-key="l">L</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key key-large" data-key="enter">ENTER</button>
+          <button class="key" data-key="z">Z</button>
+          <button class="key" data-key="x">X</button>
+          <button class="key" data-key="c">C</button>
+          <button class="key" data-key="v">V</button>
+          <button class="key" data-key="b">B</button>
+          <button class="key" data-key="n">N</button>
+          <button class="key" data-key="m">M</button>
+          <button class="key key-large" data-key="backspace">⌫</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="words.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
