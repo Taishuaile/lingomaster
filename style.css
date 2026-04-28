@@ -38,6 +38,7 @@ body {
   align-items: center;
   overflow: hidden;
   position: relative;
+  touch-action: manipulation; /* 禁止連點兩下的自動縮放 */
 }
 
 /* Background Animated Shapes */
