@@ -2,7 +2,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('error', function(e) {
-    alert("Global Error: " + e.message + " at " + e.filename + ":" + e.lineno);
+    console.error(e);
+    alert("程式發生錯誤: " + e.message + "\n行號: " + e.lineno + "\n檔案: " + e.filename);
   });
   // DOM Elements
   const screens = {
@@ -11,8 +12,26 @@ document.addEventListener('DOMContentLoaded', () => {
     readyQuiz: document.getElementById('screen-ready-quiz'),
     quiz: document.getElementById('screen-quiz'),
     result: document.getElementById('screen-result'),
-    wordle: document.getElementById('screen-wordle')
+    wordle: document.getElementById('screen-wordle'),
+    history: document.getElementById('screen-history')
   };
+
+  // Dashboard & History Elements
+  const userStreakEl = document.getElementById('user-streak');
+  const userMasteredEl = document.getElementById('user-mastered');
+  const btnShowHistory = document.getElementById('btn-show-history');
+  const btnHistoryBack = document.getElementById('btn-history-back');
+  const historyList = document.getElementById('history-list');
+  const hCountEl = document.getElementById('h-count');
+
+  // Streak Popup Elements
+  const streakOverlay = document.getElementById('streak-overlay');
+  const streakPopupCount = document.getElementById('streak-popup-count');
+  const btnCloseStreak = document.getElementById('btn-close-streak');
+  const weeklyCalendarEl = document.getElementById('weekly-calendar');
+  const btnTestStreak = document.getElementById('btn-test-streak');
+  const btnClearStats = document.getElementById('btn-clear-stats');
+  const confettiContainer = document.getElementById('confetti-container');
 
   // Start Screen Elements
   const countBtns = document.querySelectorAll('.btn-count');
@@ -77,6 +96,22 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentIndex = 0;
   let score = 0;
 
+  // Mock System State
+  let isMockMode = sessionStorage.getItem('lingomaster_mock_stats') !== null;
+  let mockOffset = parseInt(sessionStorage.getItem('lingomaster_mock_offset') || '0');
+
+  function getToday() {
+    const d = new Date();
+    if (isMockMode) {
+      d.setDate(d.getDate() + mockOffset);
+    }
+    return d;
+  }
+
+  function getTodayStr() {
+    return getToday().toISOString().split('T')[0];
+  }
+
   // Initialize Word Count
   totalWordCountEl.textContent = wordDatabase.length;
   if(countEasyEl) {
@@ -85,6 +120,292 @@ document.addEventListener('DOMContentLoaded', () => {
     countHardEl.textContent = wordDatabase.filter(w => w.diff === 'hard').length;
     const countProEl = document.getElementById('count-pro');
     if(countProEl) countProEl.textContent = wordDatabase.filter(w => w.diff === 'pro').length;
+  }
+
+  // --- Stats Manager ---
+  const StatsManager = {
+    key: 'lingomaster_user_stats',
+    mockKey: 'lingomaster_mock_stats',
+    
+    getStats() {
+      const defaultStats = {
+        streak: 0,
+        lastPlayed: null,
+        masteredWords: [],
+        history: []
+      };
+      
+      const stored = isMockMode ? sessionStorage.getItem(this.mockKey) : localStorage.getItem(this.key);
+      
+      if (!stored) return defaultStats;
+      
+      try {
+        const parsed = JSON.parse(stored);
+        return { ...defaultStats, ...parsed };
+      } catch (err) {
+        console.error("Stats parse error:", err);
+        return defaultStats;
+      }
+    },
+
+    saveStats(stats) {
+      if (isMockMode) {
+        sessionStorage.setItem(this.mockKey, JSON.stringify(stats));
+      } else {
+        localStorage.setItem(this.key, JSON.stringify(stats));
+      }
+    },
+
+    forceIncrementStreak() {
+      // 進入測試模式
+      if (!isMockMode) {
+        isMockMode = true;
+        mockOffset = 0; 
+        const realStats = this.getStats(); // 取得目前的真實資料
+        sessionStorage.setItem(this.mockKey, JSON.stringify(realStats));
+      }
+
+      // 先增加偏移量，讓模擬的「今天」往後跳
+      // 如果本來就是 0 天，第一下點擊模擬「今天」，不需要 offset
+      const stats = this.getStats();
+      if (stats.history.length > 0) {
+        mockOffset += 1;
+      }
+
+      const fakeToday = getTodayStr();
+      const updatedStats = this.getStats(); // 重新取得以確保資料最新
+      
+      if (!updatedStats.history.includes(fakeToday)) {
+        updatedStats.history.push(fakeToday);
+        updatedStats.streak += 1;
+      }
+      
+      updatedStats.lastPlayed = fakeToday;
+      this.saveStats(updatedStats);
+      this.refreshDashboard();
+      
+      sessionStorage.setItem('lingomaster_mock_offset', mockOffset);
+      
+      return updatedStats.streak;
+    },
+
+    clearMockStats() {
+      isMockMode = false;
+      mockOffset = 0;
+      sessionStorage.removeItem(this.mockKey);
+      sessionStorage.removeItem('lingomaster_mock_offset');
+      this.refreshDashboard();
+    },
+
+    clearStats() {
+      localStorage.removeItem(this.key);
+      this.refreshDashboard();
+    },
+
+    checkStreakReset() {
+      if (isMockMode) return; // Don't reset streak in mock mode automatically
+      const stats = this.getStats();
+      const today = new Date().toISOString().split('T')[0];
+      const last = stats.lastPlayed;
+
+      if (last) {
+        const lastDate = new Date(last);
+        const todayDate = new Date(today);
+        const diffTime = Math.abs(todayDate - lastDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 1) {
+          stats.streak = 0;
+          this.saveStats(stats);
+        }
+      } else {
+        stats.streak = 0;
+        this.saveStats(stats);
+      }
+      this.refreshDashboard();
+    },
+
+    incrementStreak() {
+      const stats = this.getStats();
+      const today = getTodayStr();
+      const last = stats.lastPlayed;
+
+      if (last === today) {
+        // Already incremented today
+        return false;
+      }
+
+      if (!last) {
+        stats.streak = 1;
+      } else {
+        const lastDate = new Date(last);
+        const todayDate = new Date(today);
+        const diffTime = Math.abs(todayDate - lastDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+          stats.streak += 1;
+        } else {
+          stats.streak = 1;
+        }
+      }
+      
+      stats.lastPlayed = today;
+      if (!stats.history.includes(today)) {
+        stats.history.push(today);
+      }
+      this.saveStats(stats);
+      this.refreshDashboard();
+      return stats.streak;
+    },
+
+    addMasteredWord(word) {
+      const stats = this.getStats();
+      if (!stats.masteredWords.includes(word)) {
+        stats.masteredWords.push(word);
+        this.saveStats(stats);
+        this.refreshDashboard();
+      }
+    },
+
+    refreshDashboard() {
+      const stats = this.getStats();
+      if (userStreakEl) userStreakEl.textContent = stats.streak;
+      if (userMasteredEl) userMasteredEl.textContent = stats.masteredWords.length;
+    }
+  };
+
+  // Init Stats
+  StatsManager.checkStreakReset();
+  StatsManager.refreshDashboard();
+
+  function showStreakPopup(days) {
+    const modal = document.querySelector('.streak-modal');
+    const calendarBox = document.querySelector('.streak-calendar');
+    
+    // Reset special effects
+    modal.classList.remove('milestone-7');
+    streakOverlay.classList.remove('victory-flash');
+    if (calendarBox) {
+      calendarBox.classList.remove('slide-new-week');
+      const oldLabel = calendarBox.querySelector('.calendar-new-label');
+      if (oldLabel) oldLabel.remove();
+    }
+    confettiContainer.innerHTML = '';
+
+    streakPopupCount.textContent = days;
+    renderWeeklyCalendar();
+    
+    // Check for 7-day milestone
+    if (days > 0 && days % 7 === 0) {
+      modal.classList.add('milestone-7');
+      streakOverlay.classList.add('victory-flash');
+      createConfetti();
+    }
+
+    // 新的一週動畫：當天數是 8, 15, 22... (也就是新週期的第 1 天)
+    if (days > 1 && days % 7 === 1) {
+      setTimeout(() => {
+        if (calendarBox) {
+          calendarBox.classList.add('slide-new-week');
+          // 加入 "New Week" 標籤
+          const newLabel = document.createElement('div');
+          newLabel.className = 'calendar-new-label';
+          newLabel.textContent = 'New Week 🚀';
+          calendarBox.appendChild(newLabel);
+        }
+      }, 100);
+    }
+
+    streakOverlay.classList.remove('hidden');
+    setTimeout(() => {
+      streakOverlay.classList.add('active');
+    }, 50);
+  }
+
+  function createConfetti() {
+    const colors = ['#fcc419', '#ff6b6b', '#51cf66', '#339af0', '#cc5de8', '#ffffff'];
+    const count = 100; // 增加數量
+    for (let i = 0; i < count; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + 'vw';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDelay = Math.random() * 3 + 's'; // 增加持續時間感
+      confetti.style.width = Math.random() * 12 + 6 + 'px';
+      confetti.style.height = confetti.style.width;
+      confetti.style.borderRadius = i % 2 === 0 ? '50%' : '2px'; // 混合圓形與方形紙屑
+      confettiContainer.appendChild(confetti);
+    }
+  }
+
+  function renderWeeklyCalendar() {
+    const stats = StatsManager.getStats();
+    const today = getToday();
+    
+    // 計算「今天」應該在哪一個位置 (0-6)
+    // 當天數是 1, 8, 15... 時，今天在第 0 位 (最左邊)
+    // 當天數是 7, 14, 21... 時，今天在第 6 位 (最右邊)
+    let position = 0;
+    if (stats.streak > 0) {
+      position = (stats.streak - 1) % 7;
+    }
+    
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - position);
+    
+    weeklyCalendarEl.innerHTML = '';
+    const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+    
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      
+      const dateStr = d.toISOString().split('T')[0];
+      const dateNum = d.getDate();
+      const dayName = dayNames[d.getDay()];
+      
+      const isToday = dateStr === getTodayStr();
+      const isCompleted = stats.history.includes(dateStr);
+      
+      const dayEl = document.createElement('div');
+      dayEl.className = `cal-day ${isToday ? 'today' : ''} ${isCompleted ? 'active' : ''}`;
+      dayEl.innerHTML = `
+        <div class="cal-dot">${dateNum}</div>
+        <div class="cal-name">${dayName}</div>
+      `;
+      weeklyCalendarEl.appendChild(dayEl);
+    }
+  }
+
+  btnCloseStreak.addEventListener('click', () => {
+    streakOverlay.classList.remove('active');
+    setTimeout(() => {
+      streakOverlay.classList.add('hidden');
+      confettiContainer.innerHTML = '';
+    }, 400);
+  });
+
+  // --- Test/Debug Listeners ---
+  if (btnTestStreak) {
+    btnTestStreak.addEventListener('click', () => {
+      const newStreak = StatsManager.forceIncrementStreak();
+      showStreakPopup(newStreak);
+    });
+  }
+
+  if (btnClearStats) {
+    btnClearStats.addEventListener('click', () => {
+      const hasMockData = sessionStorage.getItem('lingomaster_mock_stats') !== null;
+      
+      if (hasMockData) {
+        StatsManager.clearMockStats();
+        alert("模擬紀錄已清除，回到真實狀態。");
+        location.reload();
+      } else {
+        alert("目前沒有模擬紀錄可以清除喔！此按鈕僅用於測試模式。");
+      }
+    });
   }
 
   // --- Utility Functions ---
@@ -382,6 +703,11 @@ document.addEventListener('DOMContentLoaded', () => {
       quizFeedback.className = 'quiz-feedback feedback-wrong';
     }
 
+    // If correct, mark as mastered
+    if (selected === correct) {
+      StatsManager.addMasteredWord(correct);
+    }
+
     // Show next button
     if (currentIndex === selectedCount - 1) {
       btnNextQuestion.textContent = "查看結果 🏆";
@@ -443,11 +769,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     showScreen('result');
+
+    // Trigger Streak Popup if earned
+    const newStreak = StatsManager.incrementStreak();
+    if (newStreak) {
+      setTimeout(() => {
+        showStreakPopup(newStreak);
+      }, 1000);
+    }
   }
 
   btnRestart.addEventListener('click', () => {
     showScreen('start');
   });
+
+  // --- History Logic ---
+  btnShowHistory.addEventListener('click', () => {
+    renderHistory();
+    showScreen('history');
+  });
+
+  btnHistoryBack.addEventListener('click', () => {
+    showScreen('start');
+  });
+
+  function renderHistory() {
+    const stats = StatsManager.getStats();
+    hCountEl.textContent = stats.masteredWords.length;
+    historyList.innerHTML = '';
+
+    if (stats.masteredWords.length === 0) {
+      historyList.innerHTML = '<div class="empty-state">還沒有學習紀錄喔，快去開始學習吧！</div>';
+      return;
+    }
+
+    // Sort alphabetically
+    const sortedWords = [...stats.masteredWords].sort();
+
+    sortedWords.forEach(wordStr => {
+      const wordObj = wordDatabase.find(w => w.word === wordStr);
+      if (!wordObj) return;
+
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <div class="h-item-info">
+          <h4>${wordObj.word}</h4>
+          <p>${wordObj.trans}</p>
+        </div>
+        <div class="h-item-meta">
+          <span class="h-badge">${wordObj.diff}</span>
+        </div>
+      `;
+      historyList.appendChild(item);
+    });
+  }
 
   // --- Wordle Game Logic ---
   let wordleWord = '';
