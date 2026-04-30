@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     quiz: document.getElementById('screen-quiz'),
     result: document.getElementById('screen-result'),
     wordle: document.getElementById('screen-wordle'),
-    history: document.getElementById('screen-history')
+    history: document.getElementById('screen-history'),
+    'review-summary': document.getElementById('screen-review-summary')
   };
 
   // Dashboard & History Elements
@@ -62,7 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSpeakWord = document.getElementById('btn-speak-word');
   const btnSpeakExample = document.getElementById('btn-speak-example');
   const btnNextWord = document.getElementById('btn-next-word');
-  const flashcard = document.querySelector('.flashcard');
+  const flashcard = document.getElementById('flashcard');
+
+  // Review Summary Screen
+  const btnFinalQuizStart = document.getElementById('btn-final-quiz-start');
+  const cardFanArea = document.getElementById('card-fan');
+  const summaryCountEl = document.getElementById('summary-count');
 
   // Ready Quiz Screen
   const btnStartQuiz = document.getElementById('btn-start-quiz');
@@ -440,7 +446,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     setTimeout(() => {
-      screens[screenName].classList.add('active');
+      if (screens[screenName]) {
+        screens[screenName].classList.add('active');
+      } else {
+        console.error(`Screen "${screenName}" not found!`);
+      }
     }, 100);
   }
 
@@ -523,34 +533,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  let cardRotation = 180; // 初始角度 (背面)
+
   btnStartLearning.addEventListener('click', () => {
-    // Filter words by difficulty
     const filteredWords = wordDatabase.filter(w => w.diff === selectedDifficulty);
-    
-    // Select words
     activeWords = getRandomWords(filteredWords, selectedCount);
-    // Adjust total to actual available words if less than requested
-    const actualCount = activeWords.length;
     
-    if(actualCount === 0) {
+    if(activeWords.length === 0) {
       alert("此難度目前沒有單字！");
       return;
     }
     
-    selectedCount = actualCount; // Update active count just in case
+    selectedCount = activeWords.length;
     currentIndex = 0;
     
-    // Apply theme
     if (selectedDifficulty === 'pro') {
         flashcard.classList.add('pro-theme');
     } else {
         flashcard.classList.remove('pro-theme');
     }
 
-    // Init Learn Screen
+    // 初始化：角度重設為 180 (背面)
+    cardRotation = 180;
+    if (flashcard) {
+        flashcard.style.transition = 'none';
+        flashcard.style.transform = `rotateY(${cardRotation}deg)`;
+        flashcard.offsetHeight; 
+        flashcard.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+    }
+    
     learnTotal.textContent = selectedCount;
     renderFlashcard();
     showScreen('learn');
+
+    // 延遲一點點後翻向正面 (180 -> 0)
+    setTimeout(() => {
+      cardRotation = 0;
+      if (flashcard) flashcard.style.transform = `rotateY(${cardRotation}deg)`;
+    }, 600);
   });
 
   // --- Event Listeners: Learn Screen ---
@@ -558,11 +578,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderFlashcard() {
     const wordObj = activeWords[currentIndex];
     
-    // Trigger animation re-flow
-    flashcard.style.animation = 'none';
-    flashcard.offsetHeight; // trigger reflow
-    flashcard.style.animation = 'cardIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-
     fcWord.textContent = wordObj.word;
     fcPos.textContent = wordObj.pos;
     
@@ -575,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     fcTrans.textContent = wordObj.trans;
     
-    // Highlight the word in the example sentence
     const regex = new RegExp(`(${wordObj.word.substring(0, wordObj.word.length-2)}[a-z]*)`, 'gi');
     let highlightedExample = wordObj.example;
     if(regex.test(wordObj.example)) {
@@ -586,11 +600,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     learnCurrentIndex.textContent = currentIndex + 1;
     
-    // Update progress bar
     const progress = ((currentIndex) / selectedCount) * 100;
     learnProgressFill.style.width = `${progress}%`;
 
-    // Update button text on last word
     if (currentIndex === selectedCount - 1) {
       btnNextWord.textContent = "完成學習 🎉";
     } else {
@@ -598,24 +610,150 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  btnSpeakWord.addEventListener('click', () => {
+  btnSpeakWord.addEventListener('click', (e) => {
+    e.stopPropagation();
     speakText(activeWords[currentIndex].word);
   });
 
-  btnSpeakExample.addEventListener('click', () => {
+  btnSpeakExample.addEventListener('click', (e) => {
+    e.stopPropagation();
     speakText(activeWords[currentIndex].example);
   });
 
   btnNextWord.addEventListener('click', () => {
-    currentIndex++;
-    if (currentIndex < selectedCount) {
-      renderFlashcard();
-    } else {
-      learnProgressFill.style.width = `100%`;
+    if (flashcard) {
+      // 1. 繼續往左翻轉到背面 (0 -> -180, -360 -> -540 ...)
+      cardRotation -= 180;
+      flashcard.style.transform = `rotateY(${cardRotation}deg)`;
+      
+      // 2. 在背面時切換數據 (約 400ms)
       setTimeout(() => {
-        showScreen('readyQuiz');
-      }, 300);
+        currentIndex++;
+        if (currentIndex < selectedCount) {
+          renderFlashcard();
+          
+          // 3. 數據更新後繼續往左翻回正面 (-180 -> -360, -540 -> -720 ...)
+          setTimeout(() => {
+            cardRotation -= 180;
+            flashcard.style.transform = `rotateY(${cardRotation}deg)`;
+          }, 50); 
+        } else {
+          learnProgressFill.style.width = `100%`;
+          setTimeout(() => {
+            renderReviewSummary();
+            showScreen('review-summary');
+          }, 300);
+        }
+      }, 400); 
     }
+  });
+
+  function renderReviewSummary() {
+    summaryCountEl.textContent = selectedCount;
+    cardFanArea.innerHTML = '';
+
+    // 針對 5, 10, 15 個單字分別進行專屬間距設計
+    let spacing;
+    const wordCount = activeWords.length;
+
+    if (wordCount <= 5) {
+      spacing = 70; // 5個以下：極致寬鬆
+    } else if (wordCount <= 10) {
+      spacing = 38; // 10個：精確調整為 38px
+    } else {
+      spacing = 24; // 15個：精確調整為 24px
+    }
+
+    activeWords.forEach((wordObj, index) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'review-card-wrapper';
+      
+      // 使用動態計算的 spacing
+      const xOffset = (index - (wordCount - 1) / 2) * spacing;
+      
+      wrapper.style.setProperty('--x', `${xOffset}px`);
+      wrapper.style.zIndex = index;
+
+      const card = document.createElement('div');
+      // 直接套用跟學習介面完全一樣的類別
+      card.className = 'flashcard-front';
+      
+      const regex = new RegExp(`(${wordObj.word.substring(0, wordObj.word.length-2)}[a-z]*)`, 'gi');
+      let highlightedExample = wordObj.example;
+      if(regex.test(wordObj.example)) {
+          highlightedExample = wordObj.example.replace(regex, '<span class="highlight">$1</span>');
+      }
+
+      card.innerHTML = `
+        <div class="card-content">
+          <div class="word-header-main">
+            <div class="word-title-group">
+              <h1 class="word-text">${wordObj.word}</h1>
+              <span class="pos-badge">${wordObj.pos}</span>
+            </div>
+            <button class="btn-icon-large btn-speak-word-mini">🔊</button>
+          </div>
+
+          <div class="trans-section">
+            <p class="trans-text">${wordObj.trans}</p>
+            <div class="verb-forms ${wordObj.verbForms ? '' : 'hidden'}">
+               ${wordObj.verbForms ? '三態：' + wordObj.verbForms : ''}
+            </div>
+          </div>
+          
+          <div class="example-section">
+            <div class="example-header">
+              <span>例句用法</span>
+              <button class="btn-icon-small btn-speak-example-mini">🔊</button>
+            </div>
+            <p class="example-text">${highlightedExample}</p>
+            <p id="fc-example-trans" class="example-trans-text">${wordObj.exampleTrans}</p>
+          </div>
+        </div>
+      `;
+      
+      // 為手牌內的按鈕綁定事件
+      card.querySelector('.btn-speak-word-mini').addEventListener('click', (e) => {
+          e.stopPropagation();
+          speakText(wordObj.word);
+      });
+      card.querySelector('.btn-speak-example-mini').addEventListener('click', (e) => {
+          e.stopPropagation();
+          speakText(wordObj.example);
+      });
+
+      wrapper.appendChild(card);
+      cardFanArea.appendChild(wrapper);
+
+      // 點擊卡片鎖定在中央
+      wrapper.addEventListener('click', (e) => {
+        e.stopPropagation(); // 防止觸發背景的清除邏輯
+        
+        const isFocused = wrapper.classList.contains('focused');
+        
+        // 先清除所有卡片的狀態
+        document.querySelectorAll('.review-card-wrapper').forEach(w => w.classList.remove('focused'));
+        
+        if (!isFocused) {
+          wrapper.classList.add('focused');
+        }
+      });
+    });
+  }
+
+  // 點擊背景（非卡片處）取消鎖定
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.review-card-wrapper')) {
+      document.querySelectorAll('.review-card-wrapper').forEach(w => w.classList.remove('focused'));
+    }
+  });
+
+  btnFinalQuizStart.addEventListener('click', () => {
+    showScreen('readyQuiz');
+    // 自動開始測驗也可以，或者停在 readyQuiz
+    setTimeout(() => {
+        btnStartQuiz.click();
+    }, 500);
   });
 
   // --- Event Listeners: Ready Quiz Screen ---

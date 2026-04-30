@@ -92,33 +92,70 @@
         </div>
       </header>
 
-      <div class="flashcard-container">
-        <div class="flashcard">
-          <div class="fc-word-group">
-            <h2 id="fc-word" class="fc-word">Word</h2>
-            <button id="btn-speak-word" class="btn-icon" title="發音單字">🔊</button>
-          </div>
-          <span id="fc-pos" class="fc-pos">pos.</span>
-          <p id="fc-verb-forms" class="fc-verb-forms hidden">三態：</p>
-          <div id="fc-trans" class="fc-trans">中文翻譯</div>
-          
-          <div class="fc-divider"></div>
-          
-          <div class="fc-example-group">
-            <div class="fc-example-header">
-              <p id="fc-example" class="fc-example">Example sentence goes here.</p>
-              <button id="btn-speak-example" class="btn-icon" title="發音例句">🔊</button>
+        <div class="flashcard-container">
+          <div id="flashcard" class="flashcard-inner">
+            <!-- Front Face: All Content -->
+            <div class="flashcard-front">
+              <div class="card-content">
+                <div class="word-header-main">
+                  <div class="word-title-group">
+                    <h1 id="fc-word" class="word-text">Word</h1>
+                    <span id="fc-pos" class="pos-badge">pos</span>
+                  </div>
+                  <button id="btn-speak-word" class="btn-icon-large" title="朗讀單字">🔊</button>
+                </div>
+
+                <div class="trans-section">
+                  <p id="fc-trans" class="trans-text">翻譯</p>
+                  <div id="fc-verb-forms" class="verb-forms hidden"></div>
+                </div>
+                
+                <div class="example-section">
+                  <div class="example-header">
+                    <span>例句用法</span>
+                    <button id="btn-speak-example" class="btn-icon-small" title="朗讀例句">🔊</button>
+                  </div>
+                  <p id="fc-example" class="example-text"></p>
+                  <p id="fc-example-trans" class="example-trans-text"></p>
+                </div>
+              </div>
             </div>
-            <p id="fc-example-trans" class="fc-example-trans">例句的中文翻譯</p>
+
+            <!-- Back Face: Brand/Pattern Design -->
+            <div class="flashcard-back">
+              <div class="brand-pattern">
+                <div class="brand-logo">LM</div>
+                <div class="brand-name">LingoMaster</div>
+                <div class="brand-decoration"></div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
       <button id="btn-next-word" class="btn-primary">下一個單字 ➔</button>
     </div>
 
-    <!-- Screen 3: Transition to Quiz -->
-    <div id="screen-ready-quiz" class="screen">
+    <!-- Screen 3: Review Summary (Card Fan) -->
+    <div id="screen-review-summary" class="screen">
+      <header class="top-bar">
+        <div class="summary-title">總複習時間 📚</div>
+      </header>
+      
+      <div class="review-container">
+        <!-- 扇形卡片放置區 -->
+        <div id="card-fan" class="card-fan-area"></div>
+        
+        <div class="review-stats">
+          <p>您剛學會了 <span id="summary-count">0</span> 個單字！</p>
+        </div>
+
+
+        <button id="btn-final-quiz-start" class="btn-primary">我準備好測驗了 📝</button>
+      </div>
+    </div>
+
+    <!-- Screen 4: Transition to Quiz (Keep as secondary info or skip) -->
+    <div id="screen-ready-quiz" class="screen hidden">
       <div class="ready-box">
         <div class="ready-emoji">🧠</div>
         <h2 class="ready-title">學習完成！</h2>
