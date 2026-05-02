@@ -2089,6 +2089,30 @@ body {
     font-size: 1rem;
   }
 
+  /* Review Summary Screen Card Fan */
+  .card-fan-area {
+    height: 380px; /* 縮小區域高度 */
+  }
+
+  .review-card-wrapper .flashcard-front {
+    width: 280px !important; /* 基礎尺寸縮小 */
+    height: 360px !important;
+    min-width: 280px !important;
+    min-height: 360px !important;
+    margin-left: -140px; /* 重新置中 */
+    margin-top: -180px;
+    transform: scale(0.42); /* 稍微加大縮放比例，讓文字清晰 */
+  }
+
+  .review-card-wrapper:hover .flashcard-front,
+  .review-card-wrapper.focused .flashcard-front {
+    transform: translateX(calc(-1 * var(--x))) translateY(200px) scale(0.85) !important;
+  }
+
+  .review-stats {
+    margin-top: 40px; /* 縮小上方間距 */
+  }
+
   /* Overlay padding */
   .overlay {
     padding: 20px;

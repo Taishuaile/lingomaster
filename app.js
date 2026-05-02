@@ -716,16 +716,17 @@ document.addEventListener('DOMContentLoaded', () => {
     summaryCountEl.textContent = selectedCount;
     cardFanArea.innerHTML = '';
 
-    // 針對 5, 10, 15 個單字分別進行專屬間距設計
+    // 針對手機版自動縮小間距
+    const isMobile = window.innerWidth <= 600;
     let spacing;
     const wordCount = activeWords.length;
 
     if (wordCount <= 5) {
-      spacing = 70; // 5個以下：極致寬鬆
+      spacing = isMobile ? 55 : 70; 
     } else if (wordCount <= 10) {
-      spacing = 38; // 10個：精確調整為 38px
+      spacing = isMobile ? 30 : 38; 
     } else {
-      spacing = 24; // 15個：精確調整為 24px
+      spacing = isMobile ? 20 : 24; 
     }
 
     activeWords.forEach((wordObj, index) => {
@@ -1221,20 +1222,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Core Utility Functions ---
-
-  function showScreen(screenId) {
-    Object.values(screens).forEach(screen => {
-      if (screen) {
-        screen.classList.remove('active');
-      }
-    });
-
-    const target = screens[screenId];
-    if (target) {
-      void target.offsetWidth;
-      target.classList.add('active');
-    }
-  }
 
   function speakText(text) {
     if (!('speechSynthesis' in window)) return;
