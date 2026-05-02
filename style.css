@@ -60,6 +60,10 @@ body {
   animation: float 10s infinite alternate ease-in-out;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .shape-1 {
   width: 400px;
   height: 400px;
@@ -132,17 +136,18 @@ body {
   display: flex;
   flex-direction: column;
   padding: 30px 24px;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
   overflow-y: auto;
   opacity: 0;
   pointer-events: none;
-  transform: translateX(20px);
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: translateY(10px);
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .screen.active {
   opacity: 1;
   pointer-events: auto;
-  transform: translateX(0);
+  transform: translateY(0);
 }
 
 .screen.exit {
@@ -2103,4 +2108,16 @@ body {
   .word-display {
     font-size: 1.8rem !important;
   }
+}
+
+/* Global Button Active Effect - 手感核心 */
+button:active, .key:active {
+  transform: scale(0.96) !important;
+  opacity: 0.9;
+  transition: transform 0.1s ease;
+}
+
+/* Glassmorphism Navigation Bar - 頂部適配 */
+.app-header {
+  padding-top: env(safe-area-inset-top, 10px);
 }

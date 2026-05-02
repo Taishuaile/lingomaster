@@ -1220,4 +1220,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // --- Core Utility Functions ---
+
+  function showScreen(screenId) {
+    Object.values(screens).forEach(screen => {
+      if (screen) {
+        screen.classList.remove('active');
+      }
+    });
+
+    const target = screens[screenId];
+    if (target) {
+      void target.offsetWidth;
+      target.classList.add('active');
+    }
+  }
+
+  function speakText(text) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = (currentLang === 'korean') ? 'ko-KR' : 'en-US';
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+  }
+
 });
