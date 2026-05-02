@@ -2113,6 +2113,33 @@ body {
     margin-top: 40px; /* 縮小上方間距 */
   }
 
+  /* Card Typography Scaling - 防止文字溢出 */
+  .fc-word {
+    font-size: 30px !important;
+  }
+  
+  .fc-trans {
+    font-size: 18px !important;
+  }
+  
+  .fc-example {
+    font-size: 14px !important;
+    line-height: 1.3;
+  }
+
+  .fc-pos {
+    font-size: 13px !important;
+    padding: 1px 8px !important;
+  }
+
+  .fc-divider {
+    margin-bottom: 15px !important;
+  }
+
+  .fc-example-group {
+    padding: 10px !important;
+  }
+
   /* Overlay padding */
   .overlay {
     padding: 20px;
