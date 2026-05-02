@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const countMediumEl = document.getElementById('count-medium');
   const countHardEl = document.getElementById('count-hard');
   const btnStartWordle = document.getElementById('btn-start-wordle');
+  const langBtns = document.querySelectorAll('.btn-lang');
 
   // Wordle Elements
   const wordleBoard = document.getElementById('wordle-board');
@@ -101,6 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeWords = [];
   let currentIndex = 0;
   let score = 0;
+  let currentLang = 'english';
+  let wordDatabase = [];
 
   // Mock System State
   let isMockMode = sessionStorage.getItem('lingomaster_mock_stats') !== null;
@@ -118,80 +121,96 @@ document.addEventListener('DOMContentLoaded', () => {
     return getToday().toISOString().split('T')[0];
   }
 
-  // Initialize Word Count
-  totalWordCountEl.textContent = wordDatabase.length;
-  if(countEasyEl) {
-    countEasyEl.textContent = wordDatabase.filter(w => w.diff === 'easy').length;
-    countMediumEl.textContent = wordDatabase.filter(w => w.diff === 'medium').length;
-    countHardEl.textContent = wordDatabase.filter(w => w.diff === 'hard').length;
-    const countProEl = document.getElementById('count-pro');
-    if(countProEl) countProEl.textContent = wordDatabase.filter(w => w.diff === 'pro').length;
-  }
-
   // --- Stats Manager ---
   const StatsManager = {
-    key: 'lingomaster_user_stats',
+    globalKey: 'lingomaster_global_stats',
     mockKey: 'lingomaster_mock_stats',
+    getLangKey(lang) {
+      return 'lingomaster_mastered_' + (lang || currentLang || 'english');
+    },
+
+    init() {
+      const oldSingle = localStorage.getItem('lingomaster_user_stats');
+      if (oldSingle && !localStorage.getItem('lingomaster_user_stats_english')) {
+        localStorage.setItem('lingomaster_user_stats_english', oldSingle);
+      }
+      const oldEng = localStorage.getItem('lingomaster_user_stats_english');
+      if (oldEng && !localStorage.getItem(this.globalKey)) {
+        try {
+          const parsed = JSON.parse(oldEng);
+          const globalData = {
+            streak: parsed.streak || 0,
+            lastPlayed: parsed.lastPlayed || null,
+            history: parsed.history || []
+          };
+          localStorage.setItem(this.globalKey, JSON.stringify(globalData));
+          localStorage.setItem(this.getLangKey('english'), JSON.stringify(parsed.masteredWords || []));
+        } catch(e) {}
+      }
+    },
     
     getStats() {
-      const defaultStats = {
-        streak: 0,
-        lastPlayed: null,
-        masteredWords: [],
-        history: []
-      };
-      
-      const stored = isMockMode ? sessionStorage.getItem(this.mockKey) : localStorage.getItem(this.key);
-      
-      if (!stored) return defaultStats;
-      
+      this.init();
+      const lang = currentLang || 'english';
+      const defaultGlobal = { streak: 0, lastPlayed: null, history: [] };
+      const storedGlobal = isMockMode ? sessionStorage.getItem(this.mockKey) : localStorage.getItem(this.globalKey);
+      let global = defaultGlobal;
       try {
-        const parsed = JSON.parse(stored);
-        return { ...defaultStats, ...parsed };
-      } catch (err) {
-        console.error("Stats parse error:", err);
-        return defaultStats;
-      }
+        if(storedGlobal) global = JSON.parse(storedGlobal);
+      } catch(e) {}
+      
+      const storedMastered = localStorage.getItem(this.getLangKey(lang));
+      let masteredWords = [];
+      try {
+        if(storedMastered) masteredWords = JSON.parse(storedMastered);
+      } catch(e) {}
+      
+      return { ...global, masteredWords };
     },
 
     saveStats(stats) {
+      const lang = currentLang || 'english';
+      const globalData = {
+        streak: stats.streak,
+        lastPlayed: stats.lastPlayed,
+        history: stats.history
+      };
+      const masteredData = stats.masteredWords;
+
       if (isMockMode) {
         sessionStorage.setItem(this.mockKey, JSON.stringify(stats));
       } else {
-        localStorage.setItem(this.key, JSON.stringify(stats));
+        localStorage.setItem(this.globalKey, JSON.stringify(globalData));
+        localStorage.setItem(this.getLangKey(lang), JSON.stringify(masteredData));
       }
     },
 
+    refreshDashboard() {
+      const stats = this.getStats();
+      if (userStreakEl) userStreakEl.textContent = stats.streak;
+      if (userMasteredEl) userMasteredEl.textContent = stats.masteredWords.length;
+    },
+
     forceIncrementStreak() {
-      // 進入測試模式
       if (!isMockMode) {
         isMockMode = true;
         mockOffset = 0; 
-        const realStats = this.getStats(); // 取得目前的真實資料
+        const realStats = this.getStats();
         sessionStorage.setItem(this.mockKey, JSON.stringify(realStats));
       }
-
-      // 先增加偏移量，讓模擬的「今天」往後跳
-      // 如果本來就是 0 天，第一下點擊模擬「今天」，不需要 offset
       const stats = this.getStats();
-      if (stats.history.length > 0) {
-        mockOffset += 1;
-      }
+      if (stats.history.length > 0) mockOffset += 1;
 
       const fakeToday = getTodayStr();
-      const updatedStats = this.getStats(); // 重新取得以確保資料最新
-      
+      const updatedStats = this.getStats();
       if (!updatedStats.history.includes(fakeToday)) {
         updatedStats.history.push(fakeToday);
         updatedStats.streak += 1;
       }
-      
       updatedStats.lastPlayed = fakeToday;
       this.saveStats(updatedStats);
       this.refreshDashboard();
-      
       sessionStorage.setItem('lingomaster_mock_offset', mockOffset);
-      
       return updatedStats.streak;
     },
 
@@ -204,22 +223,22 @@ document.addEventListener('DOMContentLoaded', () => {
     },
 
     clearStats() {
-      localStorage.removeItem(this.key);
+      localStorage.removeItem(this.globalKey);
+      localStorage.removeItem(this.getLangKey('english'));
+      localStorage.removeItem(this.getLangKey('korean'));
       this.refreshDashboard();
     },
 
     checkStreakReset() {
-      if (isMockMode) return; // Don't reset streak in mock mode automatically
+      if (isMockMode) return;
       const stats = this.getStats();
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayStr();
       const last = stats.lastPlayed;
-
       if (last) {
         const lastDate = new Date(last);
         const todayDate = new Date(today);
         const diffTime = Math.abs(todayDate - lastDate);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
         if (diffDays > 1) {
           stats.streak = 0;
           this.saveStats(stats);
@@ -235,11 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const stats = this.getStats();
       const today = getTodayStr();
       const last = stats.lastPlayed;
-
-      if (last === today) {
-        // Already incremented today
-        return false;
-      }
+      if (last === today) return false;
 
       if (!last) {
         stats.streak = 1;
@@ -248,18 +263,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const todayDate = new Date(today);
         const diffTime = Math.abs(todayDate - lastDate);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 1) {
-          stats.streak += 1;
-        } else {
-          stats.streak = 1;
-        }
+        if (diffDays === 1) stats.streak += 1;
+        else stats.streak = 1;
       }
-      
       stats.lastPlayed = today;
-      if (!stats.history.includes(today)) {
-        stats.history.push(today);
-      }
+      if (!stats.history.includes(today)) stats.history.push(today);
       this.saveStats(stats);
       this.refreshDashboard();
       return stats.streak;
@@ -272,14 +280,47 @@ document.addEventListener('DOMContentLoaded', () => {
         this.saveStats(stats);
         this.refreshDashboard();
       }
-    },
-
-    refreshDashboard() {
-      const stats = this.getStats();
-      if (userStreakEl) userStreakEl.textContent = stats.streak;
-      if (userMasteredEl) userMasteredEl.textContent = stats.masteredWords.length;
     }
   };
+
+  // Initialize Language and Data
+  function loadLanguage(lang) {
+    currentLang = lang;
+    if (lang === 'korean') {
+      wordDatabase = (typeof koreanDatabase !== 'undefined') ? koreanDatabase : [];
+    } else {
+      wordDatabase = (typeof englishDatabase !== 'undefined') ? englishDatabase : [];
+    }
+    totalWordCountEl.textContent = wordDatabase.length;
+    if(countEasyEl) {
+      countEasyEl.textContent = wordDatabase.filter(w => w.diff === 'easy').length;
+      countMediumEl.textContent = wordDatabase.filter(w => w.diff === 'medium').length;
+      countHardEl.textContent = wordDatabase.filter(w => w.diff === 'hard').length;
+      const countProEl = document.getElementById('count-pro');
+      if(countProEl) countProEl.textContent = wordDatabase.filter(w => w.diff === 'pro').length;
+    }
+    const subtitle = document.querySelector('.app-subtitle');
+    if (lang === 'korean') {
+      subtitle.textContent = '韓文單字訓練所 🇰🇷';
+      document.title = 'LingoMaster | 韓文單字大師';
+    } else {
+      subtitle.textContent = '你的每日單字訓練所';
+      document.title = 'LingoMaster | 英文單字大師';
+    }
+    StatsManager.refreshDashboard();
+  }
+
+  // Initial Load
+  loadLanguage('english');
+
+  // Language Selection
+  langBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      langBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadLanguage(btn.dataset.lang);
+    });
+  });
 
   // Init Stats
   StatsManager.checkStreakReset();
@@ -425,9 +466,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // Speak Text
   function speakText(text) {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // Cancel any ongoing speech
+      window.speechSynthesis.cancel(); 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
+      
+      // 根據當前語系設定發音語言
+      if (currentLang === 'korean') {
+        utterance.lang = 'ko-KR';
+      } else {
+        utterance.lang = 'en-US';
+      }
+      
+      // 嘗試尋找該語言的最佳人聲
+      const voices = window.speechSynthesis.getVoices();
+      const targetLang = currentLang === 'korean' ? 'ko' : 'en';
+      const bestVoice = voices.find(v => v.lang.startsWith(targetLang) && v.localService);
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+      }
+      
       utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
     } else {
@@ -487,19 +543,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Create a blank in the example sentence
   function createBlankSentence(example, word) {
-    // Basic regex to find the word in the sentence (case insensitive)
+    if (currentLang === 'korean') {
+      // 韓文處理：直接尋找單字並挖空，不管後面是否有助詞
+      return example.replace(word, '________');
+    }
+    
+    // 英文處理：原本的邏輯
     const regex = new RegExp(`\\b${word}\\b`, 'gi');
-    // If the exact word form isn't found (e.g. past tense used), we just blank out a substring if possible
     if (regex.test(example)) {
        return example.replace(regex, '________');
     } else {
-       // Fallback: finding the root word ignoring suffix. Simple replace.
-       // This is a naive approach, but works for most basic examples.
        const rootRegex = new RegExp(word.substring(0, word.length - 2) + '[a-z]*', 'gi');
        if(rootRegex.test(example)) {
            return example.replace(rootRegex, '________');
        }
-       return example.replace(word, '________'); // absolute fallback
+       return example.replace(word, '________');
     }
   }
 
@@ -590,10 +648,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     fcTrans.textContent = wordObj.trans;
     
-    const regex = new RegExp(`(${wordObj.word.substring(0, wordObj.word.length-2)}[a-z]*)`, 'gi');
+    // 高亮邏輯：韓文直接匹配，英文才使用根部匹配
     let highlightedExample = wordObj.example;
-    if(regex.test(wordObj.example)) {
-        highlightedExample = wordObj.example.replace(regex, '<span class="highlight">$1</span>');
+    if (currentLang === 'korean') {
+      const regex = new RegExp(`(${wordObj.word})`, 'gi');
+      highlightedExample = wordObj.example.replace(regex, '<span class="highlight">$1</span>');
+    } else {
+      const regex = new RegExp(`(${wordObj.word.substring(0, wordObj.word.length-2)}[a-z]*)`, 'gi');
+      if(regex.test(wordObj.example)) {
+          highlightedExample = wordObj.example.replace(regex, '<span class="highlight">$1</span>');
+      }
     }
     fcExample.innerHTML = highlightedExample;
     fcExampleTrans.textContent = wordObj.exampleTrans;
@@ -678,10 +742,16 @@ document.addEventListener('DOMContentLoaded', () => {
       // 直接套用跟學習介面完全一樣的類別
       card.className = 'flashcard-front';
       
-      const regex = new RegExp(`(${wordObj.word.substring(0, wordObj.word.length-2)}[a-z]*)`, 'gi');
+      // 高亮邏輯：韓文直接匹配，英文才使用根部匹配
       let highlightedExample = wordObj.example;
-      if(regex.test(wordObj.example)) {
-          highlightedExample = wordObj.example.replace(regex, '<span class="highlight">$1</span>');
+      if (currentLang === 'korean') {
+        const regex = new RegExp(`(${wordObj.word})`, 'gi');
+        highlightedExample = wordObj.example.replace(regex, '<span class="highlight">$1</span>');
+      } else {
+        const regex = new RegExp(`(${wordObj.word.substring(0, wordObj.word.length-2)}[a-z]*)`, 'gi');
+        if(regex.test(wordObj.example)) {
+            highlightedExample = wordObj.example.replace(regex, '<span class="highlight">$1</span>');
+        }
       }
 
       card.innerHTML = `
@@ -931,21 +1001,31 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('start');
   });
 
-  function renderHistory() {
-    const stats = StatsManager.getStats();
-    hCountEl.textContent = stats.masteredWords.length;
+  function renderHistory(historyLang) {
+    const lang = historyLang || currentLang;
+    const key = StatsManager.getLangKey(lang);
+    
+    // 取得指定語系的已學單字
+    const storedMastered = localStorage.getItem(key);
+    const masteredWords = storedMastered ? JSON.parse(storedMastered) : [];
+    
+    hCountEl.textContent = masteredWords.length;
     historyList.innerHTML = '';
 
-    if (stats.masteredWords.length === 0) {
-      historyList.innerHTML = '<div class="empty-state">還沒有學習紀錄喔，快去開始學習吧！</div>';
+    const langName = lang === 'korean' ? '韓文' : '英文';
+    document.getElementById('h-lang-label').textContent = `${langName}學習清單`;
+
+    if (masteredWords.length === 0) {
+      historyList.innerHTML = `<div class="empty-state">還沒有${langName}的學習紀錄喔！</div>`;
       return;
     }
 
-    // Sort alphabetically
-    const sortedWords = [...stats.masteredWords].sort();
+    // 根據語系選擇正確的單字庫進行顯示
+    const db = (lang === 'korean') ? (typeof koreanDatabase !== 'undefined' ? koreanDatabase : []) : (typeof englishDatabase !== 'undefined' ? englishDatabase : []);
 
+    const sortedWords = [...masteredWords].sort();
     sortedWords.forEach(wordStr => {
-      const wordObj = wordDatabase.find(w => w.word === wordStr);
+      const wordObj = db.find(w => w.word === wordStr);
       if (!wordObj) return;
 
       const item = document.createElement('div');
@@ -962,6 +1042,15 @@ document.addEventListener('DOMContentLoaded', () => {
       historyList.appendChild(item);
     });
   }
+
+  // 紀錄頁面的語系切換
+  document.querySelectorAll('.btn-h-lang').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-h-lang').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderHistory(btn.dataset.lang);
+    });
+  });
 
   // --- Wordle Game Logic ---
   let wordleWord = '';

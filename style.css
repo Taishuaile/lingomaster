@@ -262,6 +262,49 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
+/* Language Options */
+.language-options {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.btn-lang {
+  flex: 1;
+  padding: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: var(--font-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-lang:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-lang.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 10px 20px rgba(67, 56, 202, 0.3);
+}
+
+.lang-flag {
+  font-size: 20px;
+}
+
 .btn-diff:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
@@ -1876,5 +1919,188 @@ body {
 
   100% {
     opacity: 0;
+  }
+}
+/* History Language Toggle */
+.history-lang-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn-h-lang {
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #888;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-h-lang.active {
+  background: white;
+  color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* =========================================
+   Responsive Web Design (RWD)
+   ========================================= */
+
+/* Mobile Phones (max-width: 600px) */
+@media (max-width: 600px) {
+  :root {
+    --container-padding: 15px;
+  }
+
+  .app-container {
+    padding: var(--container-padding);
+    margin: 0;
+    width: 100%;
+    min-height: 100vh;
+    display: block; /* 在手機上不強推置中，改用流動式 */
+  }
+
+  .app-header h1 {
+    font-size: 1.8rem;
+  }
+
+  /* Dashboard Stats */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.4rem;
+  }
+
+  /* Language Select Buttons */
+  .lang-select {
+    flex-direction: row; /* 保持橫向但縮小按鈕 */
+    gap: 10px;
+  }
+
+  .btn-lang {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+
+  /* Study Screen */
+  .word-display {
+    font-size: 2rem !important; /* 原本 38px 過大，縮小一點 */
+    margin-bottom: 10px;
+  }
+
+  .word-trans {
+    font-size: 1.2rem !important; /* 原本 24px 過大 */
+    margin-bottom: 20px;
+  }
+
+  .example-box {
+    padding: 15px;
+    font-size: 0.95rem;
+  }
+
+  /* Quiz Logic Buttons */
+  .quiz-actions {
+    grid-template-columns: 1fr; /* 手機上按鈕堆疊 */
+    gap: 10px;
+  }
+
+  /* Wordle Grid */
+  .wordle-grid {
+    gap: 5px;
+  }
+
+  .wordle-cell {
+    width: 35px;
+    height: 35px;
+    font-size: 1.2rem;
+  }
+
+  /* Virtual Keyboard - 這是手機操作最關鍵的地方 */
+  .keyboard {
+    gap: 4px;
+    padding: 5px;
+  }
+
+  .keyboard-row {
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  .key {
+    height: 40px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+  }
+
+  .key-large {
+    min-width: 45px;
+    font-size: 0.7rem;
+  }
+
+  /* Streak Modal */
+  .streak-modal {
+    width: 90%;
+    padding: 20px;
+  }
+
+  .streak-count-box span {
+    font-size: 3rem;
+  }
+
+  .calendar-days {
+    gap: 5px;
+  }
+
+  .cal-day {
+    min-width: 35px;
+    height: 50px;
+  }
+
+  .cal-dot {
+    width: 25px;
+    height: 25px;
+    font-size: 0.8rem;
+  }
+
+  /* History Page */
+  .history-item {
+    padding: 12px;
+  }
+
+  .h-item-info h4 {
+    font-size: 1rem;
+  }
+
+  /* Overlay padding */
+  .overlay {
+    padding: 20px;
+  }
+}
+
+/* Small Screen Height Fix (e.g. iPhone SE) */
+@media (max-height: 700px) {
+  .app-header {
+    margin-bottom: 15px;
+  }
+  
+  .study-card {
+    padding: 20px;
+  }
+
+  .word-display {
+    font-size: 1.8rem !important;
   }
 }

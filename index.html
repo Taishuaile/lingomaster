@@ -50,6 +50,16 @@
       </div>
 
       <div class="settings-box">
+        <p class="settings-label">選擇學習語言</p>
+        <div class="language-options">
+          <button class="btn-lang active" data-lang="english">
+            <span class="lang-flag">🇬🇧</span> 英文
+          </button>
+          <button class="btn-lang" data-lang="korean">
+            <span class="lang-flag">🇰🇷</span> 韓文
+          </button>
+        </div>
+
         <p class="settings-label">選擇難度</p>
         <div class="difficulty-options">
           <button class="btn-diff active" data-diff="easy">簡易</button>
@@ -228,8 +238,13 @@
       <div class="history-stats">
         <div class="h-stat">
           <span id="h-count">0</span>
-          <label>已熟記單字</label>
+          <label id="h-lang-label">已熟記單字</label>
         </div>
+      </div>
+
+      <div class="history-lang-toggle">
+        <button class="btn-h-lang active" data-lang="english">英文</button>
+        <button class="btn-h-lang" data-lang="korean">韓文</button>
       </div>
       
       <div class="history-list-container">
@@ -312,7 +327,8 @@
     </div>
   </div>
 
-  <script src="words.js"></script>
+  <script src="english_words.js"></script>
+  <script src="korean_words.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
