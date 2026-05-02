@@ -234,18 +234,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const stats = this.getStats();
       const today = getTodayStr();
       const last = stats.lastPlayed;
-      if (last) {
+      if (last && last !== today) {
         const lastDate = new Date(last);
         const todayDate = new Date(today);
-        const diffTime = Math.abs(todayDate - lastDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffTime = todayDate.getTime() - lastDate.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
         if (diffDays > 1) {
           stats.streak = 0;
           this.saveStats(stats);
         }
-      } else {
-        stats.streak = 0;
-        this.saveStats(stats);
       }
       this.refreshDashboard();
     },
@@ -261,10 +259,14 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         const lastDate = new Date(last);
         const todayDate = new Date(today);
-        const diffTime = Math.abs(todayDate - lastDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays === 1) stats.streak += 1;
-        else stats.streak = 1;
+        const diffTime = todayDate.getTime() - lastDate.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) {
+          stats.streak += 1;
+        } else {
+          stats.streak = 1;
+        }
       }
       stats.lastPlayed = today;
       if (!stats.history.includes(today)) stats.history.push(today);
@@ -308,6 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.title = 'LingoMaster | 英文單字大師';
     }
     StatsManager.refreshDashboard();
+    StatsManager.checkStreakReset();
   }
 
   // Initial Load
