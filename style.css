@@ -229,6 +229,10 @@ body {
   color: #5b21b6;
 }
 
+.stat-card {
+  cursor: pointer;
+}
+
 .settings-box {
   background: var(--card-bg);
   padding: 24px;
@@ -1219,7 +1223,8 @@ body {
   align-items: center;
   gap: 12px;
   backdrop-filter: blur(10px);
-  transition: transform 0.3s ease;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stat-card:hover {

@@ -329,6 +329,15 @@ document.addEventListener('DOMContentLoaded', () => {
   StatsManager.checkStreakReset();
   StatsManager.refreshDashboard();
 
+  // 點擊「連續天數」卡片顯示簽到彈窗
+  const streakCard = document.querySelector('.streak-card');
+  if (streakCard) {
+    streakCard.addEventListener('click', () => {
+      const stats = StatsManager.getStats();
+      showStreakPopup(stats.streak);
+    });
+  }
+
   function showStreakPopup(days) {
     const modal = document.querySelector('.streak-modal');
     const calendarBox = document.querySelector('.streak-calendar');
