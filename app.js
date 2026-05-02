@@ -1235,6 +1235,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Core Utility Functions ---
 
+  function updateLastModified() {
+    const lastUpdateEl = document.getElementById('last-update-time');
+    if (lastUpdateEl) {
+      // 取得網頁最後修改時間
+      const date = new Date(document.lastModified);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      lastUpdateEl.textContent = `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+  }
+
+  function showScreen(screenId) {
+    Object.values(screens).forEach(screen => {
+      if (screen) {
+        screen.classList.remove('active');
+        screen.classList.add('exit');
+        setTimeout(() => screen.classList.remove('exit'), 400);
+      }
+    });
+
+    const target = screens[screenId];
+    if (target) {
+      // 強制觸發重繪以確保動畫執行
+      void target.offsetWidth;
+      target.classList.add('active');
+    }
+  }
+
   function speakText(text) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
@@ -1243,5 +1274,8 @@ document.addEventListener('DOMContentLoaded', () => {
     utterance.rate = 0.9;
     window.speechSynthesis.speak(utterance);
   }
+
+  // 初始化自動日期
+  updateLastModified();
 
 });
